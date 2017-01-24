@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore.Internal;
@@ -91,6 +92,44 @@ namespace Microsoft.EntityFrameworkCore.Tests.Metadata.Internal
         }
 
         [Fact]
+        public void Can_add_entity_types_with_delegated_identity()
+        {
+            IMutableModel model = new Model();
+            var customerType = model.AddEntityType(typeof(Customer));
+            var idProperty = customerType.GetOrAddProperty(Customer.IdProperty);
+            var customerKey = customerType.AddKey(idProperty);
+            var delegatedOrderType = model.AddDelegatedIdentityEntityType(typeof(Order), nameof(Customer.Orders), customerType);
+
+            var fkProperty = delegatedOrderType.AddProperty("ShadowId", typeof(int));
+            var orderKey = delegatedOrderType.AddKey(fkProperty);
+            var fk = delegatedOrderType.AddForeignKey(fkProperty, customerKey, customerType);
+            var index = delegatedOrderType.AddIndex(fkProperty);
+
+            Assert.Same(fkProperty, delegatedOrderType.GetProperties().Single());
+            Assert.Same(orderKey, delegatedOrderType.GetKeys().Single());
+            Assert.Same(fk, delegatedOrderType.GetForeignKeys().Single());
+            Assert.Same(index, delegatedOrderType.GetIndexes().Single());
+            Assert.Equal(new[] { customerType, delegatedOrderType }, model.GetEntityTypes());
+            Assert.Equal(CoreStrings.ClashingDelegatedIdentityEntityType(typeof(Order).DisplayName(fullName: false)),
+                Assert.Throws<InvalidOperationException>(() => model.AddEntityType(typeof(Order))).Message);
+            Assert.Equal(CoreStrings.ClashingNonDelegatedIdentityEntityType(typeof(Customer).DisplayName(fullName: false)),
+                Assert.Throws<InvalidOperationException>(() => model.AddDelegatedIdentityEntityType(typeof(Customer), nameof(Customer.Orders), customerType)).Message);
+
+            Assert.Equal(CoreStrings.ForeignKeySelfReferencingDelegatedIdentity(nameof(Order)),
+                Assert.Throws<InvalidOperationException>(
+                    () => delegatedOrderType.AddForeignKey(fkProperty, orderKey, delegatedOrderType)).Message);
+
+            Assert.Equal(CoreStrings.EntityTypeInUseByForeignKey(nameof(Order), nameof(Customer), Property.Format(fk.Properties)),
+                Assert.Throws<InvalidOperationException>(() => model.RemoveDelegatedIdentityEntityType(delegatedOrderType)).Message);
+
+            delegatedOrderType.RemoveForeignKey(fk.Properties, fk.PrincipalKey, fk.PrincipalEntityType);
+
+            Assert.Same(delegatedOrderType, model.RemoveDelegatedIdentityEntityType(delegatedOrderType));
+            Assert.Null(((EntityType)delegatedOrderType).Builder);
+            Assert.Null(model.RemoveDelegatedIdentityEntityType(delegatedOrderType));
+        }
+
+        [Fact]
         public void Cannot_remove_entity_type_when_referenced_by_foreign_key()
         {
             var model = new Model();
@@ -103,7 +142,7 @@ namespace Microsoft.EntityFrameworkCore.Tests.Metadata.Internal
             orderType.AddForeignKey(customerFk, customerKey, customerType);
 
             Assert.Equal(
-                CoreStrings.EntityTypeInUseByForeignKey(
+                CoreStrings.EntityTypeInUseByReferencingForeignKey(
                     typeof(Customer).Name,
                     "{'" + Order.CustomerIdProperty.Name + "'}",
                     typeof(Order).Name),
@@ -204,6 +243,7 @@ namespace Microsoft.EntityFrameworkCore.Tests.Metadata.Internal
 
             public int Id { get; set; }
             public string Name { get; set; }
+            public ICollection<Order> Orders { get; set; }
         }
 
         private class SpecialCustomer : Customer

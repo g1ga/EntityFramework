@@ -18,6 +18,16 @@ namespace Microsoft.EntityFrameworkCore.Metadata
         IEntityType BaseType { get; }
 
         /// <summary>
+        ///     Gets the name of the defining navigation if this entity type with delegated identity.
+        /// </summary>
+        string DefiningNavigationName { get; }
+
+        /// <summary>
+        ///     Gets the defining entity type if this entity type with delegated identity.
+        /// </summary>
+        IEntityType DefiningEntityType { get; }
+
+        /// <summary>
         ///     <para>
         ///         Gets primary key for this entity. Returns null if no primary key is defined.
         ///     </para>

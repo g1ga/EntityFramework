@@ -75,6 +75,46 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
             => new[] { entityType }.Concat(entityType.GetDerivedTypes());
 
         /// <summary>
+        ///     Gets a value indicating whether this entity type has delegated identity.
+        /// </summary>
+        public static bool HasDelegatedIdentity([NotNull] this IEntityType entityType)
+            => entityType.FindDefiningNavigationName() != null;
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public static INavigation FindDefiningNavigation([NotNull] this IEntityType entityType)
+            => entityType.HasDelegatedIdentity() ? entityType.DefiningEntityType.FindNavigation(entityType.DefiningNavigationName) : null;
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public static Navigation FindDefiningNavigation([NotNull] this EntityType entityType)
+            => (Navigation)((IEntityType)entityType).FindDefiningNavigation();
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public static string FindDefiningNavigationName([NotNull] this IEntityType entityType)
+        {
+            var type = entityType as EntityType;
+            return type == null ? entityType.FindDefiningNavigation()?.Name : type.DefiningNavigationName;
+        }
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public static IEntityType FindDefiningEntityType([NotNull] this IEntityType entityType)
+        {
+            var type = entityType as EntityType;
+            return type == null ? entityType.FindDefiningNavigation()?.DeclaringEntityType : type.DefiningEntityType;
+        }
+
+        /// <summary>
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
