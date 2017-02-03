@@ -105,10 +105,14 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
                 PropertyIdentity.Create(navigationToDependentProperty),
                 configurationSource);
 
-        private InternalRelationshipBuilder Navigations(
-            PropertyIdentity? navigationToPrincipal,
-            PropertyIdentity? navigationToDependent,
-            ConfigurationSource? configurationSource)
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual InternalRelationshipBuilder Navigations(
+            [CanBeNull] PropertyIdentity? navigationToPrincipal,
+            [CanBeNull] PropertyIdentity? navigationToDependent,
+            [CanBeNull] ConfigurationSource? configurationSource)
             => Navigations(
                 navigationToPrincipal,
                 navigationToDependent,
@@ -839,6 +843,27 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
             return isRequired.Value
                 ? nullableProperties.All(property => property.Builder.CanSetRequired(true, configurationSource))
                 : nullableProperties.Any(property => property.Builder.CanSetRequired(false, configurationSource));
+        }
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual InternalRelationshipBuilder IsOwnership(bool ownership, ConfigurationSource configurationSource)
+        {
+            if (Metadata.IsOwnership == ownership)
+            {
+                Metadata.SetIsOwnership(ownership, configurationSource);
+                return this;
+            }
+
+            if (!configurationSource.Overrides(Metadata.GetIsOwnershipConfigurationSource()))
+            {
+                return null;
+            }
+
+            Metadata.SetIsOwnership(ownership, configurationSource);
+            return this;
         }
 
         /// <summary>

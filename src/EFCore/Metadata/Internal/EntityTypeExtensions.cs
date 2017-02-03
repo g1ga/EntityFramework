@@ -75,6 +75,13 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
             => new[] { entityType }.Concat(entityType.GetDerivedTypes());
 
         /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public static bool IsOwned([NotNull] this IEntityType entityType)
+            => entityType.HasDelegatedIdentity() && entityType.GetForeignKeys().Any(fk => fk.IsOwnership);
+
+        /// <summary>
         ///     Gets a value indicating whether this entity type has delegated identity.
         /// </summary>
         public static bool HasDelegatedIdentity([NotNull] this IEntityType entityType)
