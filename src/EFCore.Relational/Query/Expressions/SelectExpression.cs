@@ -610,23 +610,6 @@ namespace Microsoft.EntityFrameworkCore.Query.Expressions
 
                 projectionIndex = _projection.Count;
 
-                if (alias != null)
-                {
-                    foreach (var orderByAliasExpression
-                        in _orderBy.Select(o => o.Expression).OfType<AliasExpression>())
-                    {
-                        if (orderByAliasExpression.TryGetColumnExpression() == null)
-                        {
-                            // TODO: This seems bad
-                            if (orderByAliasExpression.Expression.ToString() == expression.ToString())
-                            {
-                                orderByAliasExpression.Alias = alias;
-                                orderByAliasExpression.IsProjected = true;
-                            }
-                        }
-                    }
-                }
-
                 _projection.Add(new AliasExpression(alias, expression));
 
                 if (resetProjectStar)
