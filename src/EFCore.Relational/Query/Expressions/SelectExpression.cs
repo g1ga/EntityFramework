@@ -550,7 +550,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Expressions
 
             if (aliasExpression != null)
             {
-                return AddToProjection(aliasExpression);
+                return AddToProjection(aliasExpression, resetProjectStar);
             }
 
             _projection.Add(expression);
@@ -562,15 +562,16 @@ namespace Microsoft.EntityFrameworkCore.Query.Expressions
 
             return _projection.Count - 1;
         }
-        
+
         /// <summary>
         ///     Adds an <see cref="AliasExpression" /> to the projection.
         /// </summary>
         /// <param name="aliasExpression"> The alias expression. </param>
+        /// <param name="resetProjectStar"></param>
         /// <returns>
         ///     The corresponding index of the added expression in <see cref="Projection" />.
         /// </returns>
-        public virtual int AddToProjection([NotNull] AliasExpression aliasExpression)
+        public virtual int AddToProjection([NotNull] AliasExpression aliasExpression, bool resetProjectStar = true)
         {
             Check.NotNull(aliasExpression, nameof(aliasExpression));
 
@@ -628,7 +629,10 @@ namespace Microsoft.EntityFrameworkCore.Query.Expressions
 
                 _projection.Add(new AliasExpression(alias, expression));
 
-                IsProjectStar = false;
+                if (resetProjectStar)
+                {
+                    IsProjectStar = false;
+                }
             }
 
             return projectionIndex;

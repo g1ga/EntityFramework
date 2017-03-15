@@ -1159,6 +1159,24 @@ namespace Microsoft.EntityFrameworkCore.Query.Sql
         }
 
         /// <summary>
+        ///     Visits a ColumnExpression.
+        /// </summary>
+        /// <param name="columnReferenceExpression"> The column expression. </param>
+        /// <returns>
+        ///     An Expression.
+        /// </returns>
+        public virtual Expression VisitColumnReference(ColumnReferenceExpression columnReferenceExpression)
+        {
+            Check.NotNull(columnReferenceExpression, nameof(columnReferenceExpression));
+
+            _relationalCommandBuilder.Append(SqlGenerator.DelimitIdentifier(columnReferenceExpression.TableAlias))
+                .Append(".")
+                .Append(SqlGenerator.DelimitIdentifier(columnReferenceExpression.Name));
+
+            return columnReferenceExpression;
+        }
+
+        /// <summary>
         ///     Visits an AliasExpression.
         /// </summary>
         /// <param name="aliasExpression"> The alias expression. </param>

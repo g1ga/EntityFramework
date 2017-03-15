@@ -173,5 +173,14 @@ namespace Microsoft.EntityFrameworkCore.Query.Sql
         ///     An Expression.
         /// </returns>
         Expression VisitSqlFragment([NotNull] SqlFragmentExpression sqlFragmentExpression);
+
+        /// <summary>
+        ///     Visit a SqlFragmentExpression.
+        /// </summary>
+        /// <param name="columnReferenceExpression"> The SqlFragmentExpression expression. </param>
+        /// <returns>
+        ///     An Expression.
+        /// </returns>
+        Expression VisitColumnReference([NotNull] ColumnReferenceExpression columnReferenceExpression);
     }
 }

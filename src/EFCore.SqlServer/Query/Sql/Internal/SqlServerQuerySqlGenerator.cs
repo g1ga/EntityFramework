@@ -50,11 +50,6 @@ namespace Microsoft.EntityFrameworkCore.Query.Sql.Internal
         /// </summary>
         protected override void GenerateLimitOffset(SelectExpression selectExpression)
         {
-            if (selectExpression.Projection.OfType<RowNumberExpression>().Any())
-            {
-                return;
-            }
-
             if (selectExpression.Offset != null
                 && !selectExpression.OrderBy.Any())
             {
@@ -74,7 +69,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Sql.Internal
 
             Sql.Append("ROW_NUMBER() OVER(");
             GenerateOrderBy(rowNumberExpression.Orderings);
-            Sql.Append(") AS ").Append(SqlGenerator.DelimitIdentifier(rowNumberExpression.ColumnExpression.Name));
+            Sql.Append(")");
 
             return rowNumberExpression;
         }

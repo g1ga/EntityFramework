@@ -128,18 +128,23 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
                         new Ordering(new SqlFunctionExpression("@@RowCount", typeof(int)), OrderingDirection.Asc));
                 }
 
-                var columnExpression = new ColumnExpression(RowNumberColumnName, typeof(int), subQuery);
-                var rowNumber = new RowNumberExpression(columnExpression, subQuery.OrderBy);
+                var innerRowNumberExpression = new AliasExpression(
+                    RowNumberColumnName,
+                    new RowNumberExpression(subQuery.OrderBy));
 
                 subQuery.ClearOrderBy();
-                subQuery.AddToProjection(rowNumber, false);
+                subQuery.AddToProjection(innerRowNumberExpression, false);
+
+                var rowNumberReferenceExpression = new ColumnReferenceExpression(innerRowNumberExpression, subQuery);
 
                 var offset = subQuery.Offset ?? Expression.Constant(0);
 
                 if (subQuery.Offset != null)
                 {
                     selectExpression.AddToPredicate
-                        (Expression.GreaterThan(columnExpression, offset));
+                        (Expression.GreaterThan(rowNumberReferenceExpression, offset));
+
+                    subQuery.Offset = null;
                 }
 
                 if (subQuery.Limit != null)
@@ -154,7 +159,9 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
                             : Expression.Add(offset, subQuery.Limit);
 
                     selectExpression.AddToPredicate(
-                        Expression.LessThanOrEqual(columnExpression, limitExpression));
+                        Expression.LessThanOrEqual(rowNumberReferenceExpression, limitExpression));
+
+                    subQuery.Limit = null;
                 }
 
                 if (selectExpression.Alias != null)
