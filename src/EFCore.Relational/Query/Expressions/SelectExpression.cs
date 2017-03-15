@@ -539,18 +539,47 @@ namespace Microsoft.EntityFrameworkCore.Query.Expressions
                 }
             }
 
-            var columnExpression = expression as ColumnExpression;
+            var projectionIndex
+                = _projection.FindIndex(e =>
+                    e.Equals(expression)
+                    || (e as AliasExpression)?.Expression.Equals(expression) == true);
 
-            if (columnExpression != null)
+            if (projectionIndex != -1)
             {
-                return AddToProjection(columnExpression);
+                return projectionIndex;
             }
 
-            var aliasExpression = expression as AliasExpression;
-
-            if (aliasExpression != null)
+            // Alias != null means SelectExpression in subquery which needs projections to have unique aliases
+            if (Alias != null)
             {
-                return AddToProjection(aliasExpression, resetProjectStar);
+                if (expression is ColumnExpression columnExpression)
+                {
+                    var currentAlias = columnExpression.Name;
+                    var uniqueAlias = CreateUniqueProjectionAlias(currentAlias);
+
+                    //TODO:TITU Remove creation of alias expression if name is not changing once the restriction that all projections in subquery are alias expression
+                    expression
+                        = !string.Equals(currentAlias, uniqueAlias, StringComparison.OrdinalIgnoreCase)
+                            ? new AliasExpression(uniqueAlias, columnExpression)
+                            : new AliasExpression(columnExpression);
+                }
+                else if (expression is AliasExpression aliasExpression)
+                {
+                    //TODO:TITU Remove coalesce once AliasExpression becomes always non-null alias
+                    var currentAlias = aliasExpression.Alias ?? aliasExpression.TryGetColumnExpression()?.Name ?? aliasExpression.Expression.NodeType.ToString();
+                    var uniqueAlias = CreateUniqueProjectionAlias(currentAlias);
+
+                    if (!string.Equals(currentAlias, uniqueAlias, StringComparison.OrdinalIgnoreCase))
+                    {
+                        aliasExpression.Alias = uniqueAlias;
+                    }
+                }
+            }
+
+            //TODO:TITU Remove this later. Currently we add all column expression wrapped in alias expression
+            if (expression is ColumnExpression)
+            {
+                expression = new AliasExpression(expression);
             }
 
             _projection.Add(expression);
@@ -561,112 +590,6 @@ namespace Microsoft.EntityFrameworkCore.Query.Expressions
             }
 
             return _projection.Count - 1;
-        }
-
-        /// <summary>
-        ///     Adds an <see cref="AliasExpression" /> to the projection.
-        /// </summary>
-        /// <param name="aliasExpression"> The alias expression. </param>
-        /// <param name="resetProjectStar"></param>
-        /// <returns>
-        ///     The corresponding index of the added expression in <see cref="Projection" />.
-        /// </returns>
-        public virtual int AddToProjection([NotNull] AliasExpression aliasExpression, bool resetProjectStar = true)
-        {
-            Check.NotNull(aliasExpression, nameof(aliasExpression));
-
-            var alias = aliasExpression.Alias;
-            var expression = aliasExpression.Expression;
-            var columnExpression = expression as ColumnExpression;
-
-            var projectionIndex
-                = _projection
-                    .FindIndex(e =>
-                    {
-                        var ae = e as AliasExpression;
-                        var ce = e.TryGetColumnExpression();
-
-                        return (ce != null
-                                && columnExpression != null
-                                && ce.Name == columnExpression.Name
-                                && ce.TableAlias == columnExpression.TableAlias)
-                               || ae?.Expression == expression;
-                    });
-
-            if (projectionIndex == -1)
-            {
-                // Alias != null means SelectExpression in subquery which needs projections to have unique aliases
-                if (Alias != null)
-                {
-                    var currentAlias = alias ?? columnExpression?.Name ?? expression.NodeType.ToString();
-                    var uniqueAlias = CreateUniqueProjectionAlias(currentAlias);
-
-                    if (columnExpression == null
-                        || !string.Equals(currentAlias, uniqueAlias, StringComparison.OrdinalIgnoreCase))
-                    {
-                        alias = uniqueAlias;
-                    }
-                }
-
-                projectionIndex = _projection.Count;
-
-                _projection.Add(new AliasExpression(alias, expression));
-
-                if (resetProjectStar)
-                {
-                    IsProjectStar = false;
-                }
-            }
-
-            return projectionIndex;
-        }
-
-        /// <summary>
-        ///     Adds a ColumnExpression to the projection.
-        /// </summary>
-        /// <param name="columnExpression"> The column expression. </param>
-        /// <returns>
-        ///     The corresponding index of the added expression in <see cref="Projection" />.
-        /// </returns>
-        public virtual int AddToProjection([NotNull] ColumnExpression columnExpression)
-        {
-            Check.NotNull(columnExpression, nameof(columnExpression));
-
-            var projectionIndex
-                = _projection
-                    .FindIndex(e =>
-                    {
-                        var ce = e.TryGetColumnExpression();
-
-                        return ce != null
-                               && ce.Name == columnExpression.Name
-                               && ce.TableAlias == columnExpression.TableAlias;
-                    });
-
-            if (projectionIndex == -1)
-            {
-                var aliasExpression = new AliasExpression(columnExpression);
-
-                // Alias != null means SelectExpression in subquery which needs projections to have unique aliases
-                if (Alias != null)
-                {
-                    var currentAlias = columnExpression.Name;
-                    var uniqueAlias = CreateUniqueProjectionAlias(currentAlias);
-
-                    if (!string.Equals(currentAlias, uniqueAlias, StringComparison.OrdinalIgnoreCase))
-                    {
-                        aliasExpression.Alias = uniqueAlias;
-                    }
-                }
-
-                projectionIndex = _projection.Count;
-
-                _projection.Add(aliasExpression);
-
-                IsProjectStar = false;
-            }
-
-            return projectionIndex;
         }
 
         /// <summary>

@@ -121,10 +121,12 @@ namespace Microsoft.EntityFrameworkCore.Query.Expressions
         protected override Expression VisitChildren(ExpressionVisitor visitor) => this;
 
         private bool Equals([NotNull] ColumnExpression other)
-            => ((_property == null && other._property == null && Name == other.Name)
-                || (_property != null && _property.Equals(other._property)))
+            // TODO:TITU Compare on names only because multiple properties can map to same column
+            => (Name == other.Name)
+                //|| (_property != null && _property.Equals(other._property)))
                && Type == other.Type
-               && _tableExpression.Equals(other._tableExpression);
+            // TODO:TITU compare on table alias because sometimes tables are changed due to join
+               && TableAlias.Equals(other.TableAlias);
 
         /// <summary>
         ///     Tests if this object is considered equal to another.
