@@ -5308,6 +5308,82 @@ WHERE [o].[OrderID] < 10500",
                 Sql);
         }
 
+        public override void Select_nested_collection_multi_level2()
+        {
+            base.Select_nested_collection_multi_level2();
+
+            Assert.Equal(
+                @"SELECT (
+    SELECT TOP(1) [o0].[OrderDate]
+    FROM [Orders] AS [o0]
+    WHERE ([o0].[OrderID] < 10500) AND ([c].[CustomerID] = [o0].[CustomerID])
+)
+FROM [Customers] AS [c]
+WHERE [c].[CustomerID] LIKE N'A' + N'%' AND (CHARINDEX(N'A', [c].[CustomerID]) = 1)",
+                Sql);
+        }
+
+        public override void Select_nested_collection_multi_level3()
+        {
+            base.Select_nested_collection_multi_level3();
+
+            Assert.Equal(
+                @"SELECT (
+    SELECT TOP(1) (
+        SELECT COUNT(*)
+        FROM [Order Details] AS [od0]
+        WHERE ([od0].[OrderID] > 10) AND ([o0].[OrderID] = [od0].[OrderID])
+    )
+    FROM [Orders] AS [o0]
+    WHERE ([o0].[OrderID] < 10500) AND ([c].[CustomerID] = [o0].[CustomerID])
+)
+FROM [Customers] AS [c]
+WHERE [c].[CustomerID] LIKE N'A' + N'%' AND (CHARINDEX(N'A', [c].[CustomerID]) = 1)",
+                Sql);
+        }
+
+        public override void Select_nested_collection_multi_level4()
+        {
+            base.Select_nested_collection_multi_level4();
+
+            Assert.Equal(
+                @"SELECT (
+    SELECT TOP(1) (
+        SELECT TOP(1) [od0].[ProductID]
+        FROM [Order Details] AS [od0]
+        WHERE ([od0].[OrderID] <> (
+            SELECT COUNT(*)
+            FROM [Orders] AS [o2]
+            WHERE [c].[CustomerID] = [o2].[CustomerID]
+        )) AND ([o1].[OrderID] = [od0].[OrderID])
+    )
+    FROM [Orders] AS [o1]
+    WHERE ([o1].[OrderID] < 10500) AND ([c].[CustomerID] = [o1].[CustomerID])
+)
+FROM [Customers] AS [c]
+WHERE [c].[CustomerID] LIKE N'A' + N'%' AND (CHARINDEX(N'A', [c].[CustomerID]) = 1)",
+                Sql);
+        }
+
+        public override void Select_nested_collection_multi_level5()
+        {
+            base.Select_nested_collection_multi_level5();
+
+            Assert.Equal(
+                @"SELECT (
+    SELECT TOP(1) (
+        SELECT TOP(1) [od0].[ProductID]
+        FROM [Order Details] AS [od0]
+        WHERE ([od0].[OrderID] <> LEN([c].[CustomerID])) AND ([o0].[OrderID] = [od0].[OrderID])
+    )
+    FROM [Orders] AS [o0]
+    WHERE ([o0].[OrderID] < 10500) AND ([c].[CustomerID] = [o0].[CustomerID])
+)
+FROM [Customers] AS [c]
+WHERE [c].[CustomerID] LIKE N'A' + N'%' AND (CHARINDEX(N'A', [c].[CustomerID]) = 1)",
+                Sql);
+        }
+
         public override void Select_nested_collection_count_using_anonymous_type()
         {
             base.Select_nested_collection_count_using_anonymous_type();

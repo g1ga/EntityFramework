@@ -632,10 +632,15 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors
             if (expression == null
                 && _bindParentQueries)
             {
+                var oldQueryModelStreamedDataInfo = _currentQueryModelStreamedDataInfo;
+                _currentQueryModelStreamedDataInfo = _queryModelVisitor._queryModelOutputDataInfo;
+
                 expression
                     = TryBindParentExpression(
                         _queryModelVisitor.ParentQueryModelVisitor,
                         qmv => qmv.BindMethodCallExpression(methodCallExpression, CreateAliasedColumnExpressionCore));
+
+                _currentQueryModelStreamedDataInfo = oldQueryModelStreamedDataInfo;
             }
 
             return expression
@@ -682,10 +687,15 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors
             if (aliasExpression == null
                 && _bindParentQueries)
             {
+                var oldQueryModelStreamedDataInfo = _currentQueryModelStreamedDataInfo;
+                _currentQueryModelStreamedDataInfo = _queryModelVisitor._queryModelOutputDataInfo;
+
                 aliasExpression
                     = TryBindParentExpression(
                         _queryModelVisitor.ParentQueryModelVisitor,
                         qmv => qmv.BindMemberExpression(expression, CreateAliasedColumnExpressionCore));
+
+                _currentQueryModelStreamedDataInfo = oldQueryModelStreamedDataInfo;
             }
 
             if (aliasExpression == null)
@@ -712,11 +722,14 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors
                    ?? _queryModelVisitor.BindMemberToOuterQueryParameter(expression);
         }
 
+        internal static IStreamedDataInfo _currentQueryModelStreamedDataInfo;
+
         private static AliasExpression TryBindParentExpression(
             RelationalQueryModelVisitor queryModelVisitor,
             Func<RelationalQueryModelVisitor, AliasExpression> binder)
         {
-            if (queryModelVisitor == null || queryModelVisitor.RequiresClientProjection)
+            if (queryModelVisitor == null 
+                || (queryModelVisitor.RequiresClientProjection && !(_currentQueryModelStreamedDataInfo is StreamedSingleValueInfo)))
             {
                 return null;
             }
@@ -919,13 +932,15 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors
                     var queryModelMapping = new Dictionary<QueryModel, QueryModel>();
                     subQueryModel.PopulateQueryModelMapping(queryModelMapping);
 
+                    var oldQueryModelOutputDataInfo = queryModelVisitor._queryModelOutputDataInfo;
+                    queryModelVisitor._queryModelOutputDataInfo = subQueryOutputDataInfo;
                     queryModelVisitor.VisitSubQueryModel(subQueryModel);
+                    queryModelVisitor._queryModelOutputDataInfo = oldQueryModelOutputDataInfo;
 
                     if (queryModelVisitor.Queries.Count == 1
                         && !queryModelVisitor.RequiresClientFilter
                         && !queryModelVisitor.RequiresClientProjection
-                        && !queryModelVisitor.RequiresClientResultOperator
-                        && !_queryModelVisitor.RequiresClientProjection)
+                        && !queryModelVisitor.RequiresClientResultOperator)
                     {
                         var selectExpression = queryModelVisitor.Queries.First();
 

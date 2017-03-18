@@ -2205,6 +2205,99 @@ namespace Microsoft.EntityFrameworkCore.Specification.Tests
         }
 
         [ConditionalFact]
+        public virtual void Select_nested_collection_multi_level2()
+        {
+            using (var context = CreateContext())
+            {
+                var customers = context.Customers
+                    .Where(c => c.CustomerID.StartsWith("A"))
+                    .Select(c => new
+                    {
+                        Order = c.Orders
+                            .Where(o => o.OrderID < 10500)
+                            .Select(o => /*new { Date =*/ o.OrderDate/* }*/)
+                            .FirstOrDefault()
+                    })
+                    .ToList();
+
+                Assert.Equal(4, customers.Count);
+                //Assert.All(customers, t => Assert.True(t.Orders.Count() <= 3));
+            }
+        }
+
+        [ConditionalFact]
+        public virtual void Select_nested_collection_multi_level3()
+        {
+            using (var context = CreateContext())
+            {
+                var customers = context.Customers
+                    .Where(c => c.CustomerID.StartsWith("A"))
+                    .Select(c => new
+                    {
+                        Order = (int?)c.Orders
+                            .Where(o => o.OrderID < 10500)
+                            .Select(o => o.OrderDetails
+                                .Where(od => od.OrderID > 10)
+                                .Select(od => od.ProductID)
+                                .Count())
+                            .FirstOrDefault()
+                    })
+                    .ToList();
+
+                Assert.Equal(4, customers.Count);
+                //Assert.All(customers, t => Assert.True(t.Orders.Count() <= 3));
+            }
+        }
+
+        [ConditionalFact]
+        public virtual void Select_nested_collection_multi_level4()
+        {
+            using (var context = CreateContext())
+            {
+                var customers = context.Customers
+                    .Where(c => c.CustomerID.StartsWith("A"))
+                    .Select(c => new
+                    {
+                        Order = (int?)c.Orders
+                            .Where(o => o.OrderID < 10500)
+                            .Select(o => o.OrderDetails
+                                .Where(od => od.OrderID != c.Orders.Count)
+                                .Select(od => od.ProductID)
+                                .FirstOrDefault())
+                            .FirstOrDefault()
+                    })
+                    .ToList();
+
+                Assert.Equal(4, customers.Count);
+                //Assert.All(customers, t => Assert.True(t.Orders.Count() <= 3));
+            }
+        }
+
+        [ConditionalFact]
+        public virtual void Select_nested_collection_multi_level5()
+        {
+            using (var context = CreateContext())
+            {
+                var customers = context.Customers
+                    .Where(c => c.CustomerID.StartsWith("A"))
+                    .Select(c => new
+                    {
+                        Order = (int?)c.Orders
+                            .Where(o => o.OrderID < 10500)
+                            .Select(o => o.OrderDetails
+                                .Where(od => od.OrderID != c.CustomerID.Length)
+                                .Select(od => od.ProductID)
+                                .FirstOrDefault())
+                            .FirstOrDefault()
+                    })
+                    .ToList();
+
+                Assert.Equal(4, customers.Count);
+                //Assert.All(customers, t => Assert.True(t.Orders.Count() <= 3));
+            }
+        }
+
+        [ConditionalFact]
         public virtual void Select_nested_collection_count_using_anonymous_type()
         {
             AssertQuery<Customer>(cs => cs
