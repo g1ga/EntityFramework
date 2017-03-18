@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 using JetBrains.Annotations;
@@ -97,28 +98,15 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
 
                 foreach (var projection in subQuery.Projection)
                 {
-                    var alias = projection as AliasExpression;
-                    var column = projection as ColumnExpression;
+                    var columnReference = projection.LiftExpressionFromSubquery(subQuery);
 
-                    if (column != null)
+                    if (columnReference != null)
                     {
-                        column = new ColumnExpression(column.Name, column.Property, subQuery);
-                        selectExpression.AddToProjection(column);
-                        continue;
-                    }
-
-                    column = alias?.TryGetColumnExpression();
-
-                    if (column != null)
-                    {
-                        column = new ColumnExpression(alias.Alias ?? column.Name, column.Property, subQuery);
-                        alias = new AliasExpression(alias.Alias, column);
-                        selectExpression.AddToProjection(alias);
+                        selectExpression.AddToProjection(columnReference);
                     }
                     else
                     {
-                        column = new ColumnExpression(alias?.Alias, alias.Expression.Type, subQuery);
-                        selectExpression.AddToProjection(column);
+                        throw new Exception("Subquery should not have any other type of expression.");
                     }
                 }
 

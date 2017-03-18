@@ -1457,8 +1457,8 @@ namespace Microsoft.EntityFrameworkCore.Query
             {
                 var subSelectExpression = innerSelectExpression.PushDownSubquery();
                 innerSelectExpression.ExplodeStarProjection();
-                subSelectExpression.ClearProjection();
                 subSelectExpression.IsProjectStar = true;
+                subSelectExpression.ClearProjection();
                 subSelectExpression.QuerySource = joinClause;
 
                 predicate 
@@ -1470,7 +1470,7 @@ namespace Microsoft.EntityFrameworkCore.Query
 
             outerSelectExpression.RemoveRangeFromProjection(previousProjectionCount);
 
-            var projection
+            var projections
                 = QueryCompilationContext.QuerySourceRequiresMaterialization(joinClause)
                     ? innerSelectExpression.Projection
                     : Enumerable.Empty<Expression>();
@@ -1478,7 +1478,7 @@ namespace Microsoft.EntityFrameworkCore.Query
             var joinExpression
                 = outerSelectExpression.AddLeftOuterJoin(
                     innerSelectExpression.Tables.Single(),
-                    projection);
+                    projections);
 
             joinExpression.Predicate = predicate;
             joinExpression.QuerySource = joinClause;
@@ -1686,7 +1686,7 @@ namespace Microsoft.EntityFrameworkCore.Query
                 memberExpression,
                 (property, querySource, selectExpression) =>
                     {
-                        var projectionIndex = selectExpression.GetProjectionIndex(property, querySource);
+                        var projectionIndex = selectExpression.GetProjectionIndex(_relationalAnnotationProvider.For(property).ColumnName, property, querySource);
 
                         Debug.Assert(projectionIndex > -1);
 
@@ -1713,7 +1713,7 @@ namespace Microsoft.EntityFrameworkCore.Query
                        methodCallExpression,
                        (property, querySource, selectExpression) =>
                            {
-                               var projectionIndex = selectExpression.GetProjectionIndex(property, querySource);
+                               var projectionIndex = selectExpression.GetProjectionIndex(_relationalAnnotationProvider.For(property).ColumnName, property, querySource);
 
                                Debug.Assert(projectionIndex > -1);
 

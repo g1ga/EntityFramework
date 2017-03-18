@@ -182,5 +182,14 @@ namespace Microsoft.EntityFrameworkCore.Query.Sql
         ///     An Expression.
         /// </returns>
         Expression VisitColumnReference([NotNull] ColumnReferenceExpression columnReferenceExpression);
+
+        /// <summary>
+        ///     Visit a SqlFragmentExpression.
+        /// </summary>
+        /// <param name="projectStarExpression"> The SqlFragmentExpression expression. </param>
+        /// <returns>
+        ///     An Expression.
+        /// </returns>
+        Expression VisitProjectStar([NotNull] ProjectStarExpression projectStarExpression);
     }
 }

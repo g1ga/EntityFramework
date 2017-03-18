@@ -257,87 +257,87 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
 
         private static Expression HandleContains(HandlerContext handlerContext)
         {
-            var filteringVisitor = handlerContext.CreateSqlTranslatingVisitor();
+            //var filteringVisitor = handlerContext.CreateSqlTranslatingVisitor();
 
-            var itemResultOperator = (ContainsResultOperator)handlerContext.ResultOperator;
+            //var itemResultOperator = (ContainsResultOperator)handlerContext.ResultOperator;
 
-            var item = filteringVisitor.Visit(itemResultOperator.Item);
-            if (item != null)
-            {
-                var itemSelectExpression = item as SelectExpression;
+            //var item = filteringVisitor.Visit(itemResultOperator.Item);
+            //if (item != null)
+            //{
+            //    var itemSelectExpression = item as SelectExpression;
 
-                if (itemSelectExpression != null)
-                {
-                    var entityType = handlerContext.Model.FindEntityType(handlerContext.QueryModel.MainFromClause.ItemType);
+            //    if (itemSelectExpression != null)
+            //    {
+            //        var entityType = handlerContext.Model.FindEntityType(handlerContext.QueryModel.MainFromClause.ItemType);
 
-                    if (entityType != null)
-                    {
-                        var outerSelectExpression = handlerContext.SelectExpressionFactory.Create(handlerContext.QueryModelVisitor.QueryCompilationContext);
-                        outerSelectExpression.SetProjectionExpression(Expression.Constant(1));
+            //        if (entityType != null)
+            //        {
+            //            var outerSelectExpression = handlerContext.SelectExpressionFactory.Create(handlerContext.QueryModelVisitor.QueryCompilationContext);
+            //            outerSelectExpression.SetProjectionExpression(Expression.Constant(1));
 
-                        var collectionSelectExpression
-                            = handlerContext.SelectExpression.Clone(handlerContext.QueryModelVisitor.QueryCompilationContext.CreateUniqueTableAlias());
-                        outerSelectExpression.AddTable(collectionSelectExpression);
+            //            var collectionSelectExpression
+            //                = handlerContext.SelectExpression.Clone(handlerContext.QueryModelVisitor.QueryCompilationContext.CreateUniqueTableAlias());
+            //            outerSelectExpression.AddTable(collectionSelectExpression);
 
-                        itemSelectExpression.Alias = handlerContext.QueryModelVisitor.QueryCompilationContext.CreateUniqueTableAlias();
-                        var joinExpression = outerSelectExpression.AddInnerJoin(itemSelectExpression);
+            //            itemSelectExpression.Alias = handlerContext.QueryModelVisitor.QueryCompilationContext.CreateUniqueTableAlias();
+            //            var joinExpression = outerSelectExpression.AddInnerJoin(itemSelectExpression);
 
-                        foreach (var property in entityType.FindPrimaryKey().Properties)
-                        {
-                            itemSelectExpression.AddToProjection(
-                                new ColumnExpression(
-                                    property.Name,
-                                    property,
-                                    itemSelectExpression.Tables.First()));
+            //            foreach (var property in entityType.FindPrimaryKey().Properties)
+            //            {
+            //                itemSelectExpression.AddToProjection(
+            //                    new ColumnExpression(
+            //                        property.Name,
+            //                        property,
+            //                        itemSelectExpression.Tables.First()));
 
-                            collectionSelectExpression.AddToProjection(
-                                new ColumnExpression(
-                                    property.Name,
-                                    property,
-                                    collectionSelectExpression.Tables.First()));
+            //                collectionSelectExpression.AddToProjection(
+            //                    new ColumnExpression(
+            //                        property.Name,
+            //                        property,
+            //                        collectionSelectExpression.Tables.First()));
 
-                            var predicate = Expression.Equal(
-                                new ColumnExpression(
-                                    property.Name,
-                                    property,
-                                    collectionSelectExpression),
-                                new ColumnExpression(
-                                    property.Name,
-                                    property,
-                                    itemSelectExpression));
+            //                var predicate = Expression.Equal(
+            //                    new ColumnExpression(
+            //                        property.Name,
+            //                        property,
+            //                        collectionSelectExpression),
+            //                    new ColumnExpression(
+            //                        property.Name,
+            //                        property,
+            //                        itemSelectExpression));
 
-                            joinExpression.Predicate
-                                = joinExpression.Predicate == null
-                                    ? predicate
-                                    : Expression.AndAlso(
-                                        joinExpression.Predicate,
-                                        predicate);
-                        }
+            //                joinExpression.Predicate
+            //                    = joinExpression.Predicate == null
+            //                        ? predicate
+            //                        : Expression.AndAlso(
+            //                            joinExpression.Predicate,
+            //                            predicate);
+            //            }
 
-                        SetProjectionConditionalExpression(
-                            handlerContext,
-                            Expression.Condition(
-                                new ExistsExpression(outerSelectExpression),
-                                Expression.Constant(true),
-                                Expression.Constant(false),
-                                typeof(bool)));
+            //            SetProjectionConditionalExpression(
+            //                handlerContext,
+            //                Expression.Condition(
+            //                    new ExistsExpression(outerSelectExpression),
+            //                    Expression.Constant(true),
+            //                    Expression.Constant(false),
+            //                    typeof(bool)));
 
-                        return TransformClientExpression<bool>(handlerContext);
-                    }
-                }
+            //            return TransformClientExpression<bool>(handlerContext);
+            //        }
+            //    }
 
-                SetProjectionConditionalExpression(
-                    handlerContext,
-                    Expression.Condition(
-                        new InExpression(
-                            item,
-                            handlerContext.SelectExpression.Clone("")),
-                        Expression.Constant(true),
-                        Expression.Constant(false),
-                        typeof(bool)));
+            //    SetProjectionConditionalExpression(
+            //        handlerContext,
+            //        Expression.Condition(
+            //            new InExpression(
+            //                item,
+            //                handlerContext.SelectExpression.Clone("")),
+            //            Expression.Constant(true),
+            //            Expression.Constant(false),
+            //            typeof(bool)));
 
-                return TransformClientExpression<bool>(handlerContext);
-            }
+            //    return TransformClientExpression<bool>(handlerContext);
+            //}
 
             return handlerContext.EvalOnClient();
         }

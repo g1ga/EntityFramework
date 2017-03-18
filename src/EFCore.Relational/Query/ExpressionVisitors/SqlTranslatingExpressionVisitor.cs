@@ -130,7 +130,7 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors
                     var right = Visit(expression.Right);
 
                     return left != null && right != null
-                        ? new AliasExpression(expression.Update(left, expression.Conversion, right))
+                        ? expression.Update(left, expression.Conversion, right)
                         : null;
                 }
 
@@ -569,14 +569,9 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors
                         nonNullExpression = nullableExpression.Operand.RemoveConvert();
                     }
 
-                    var columnExpression = nonNullExpression.TryGetColumnExpression();
-
-                    if (columnExpression != null)
-                    {
-                        return expressionType == ExpressionType.Equal
-                            ? (Expression)new IsNullExpression(columnExpression)
-                            : Expression.Not(new IsNullExpression(columnExpression));
-                    }
+                    return expressionType == ExpressionType.Equal
+                        ? (Expression)new IsNullExpression(nonNullExpression)
+                        : Expression.Not(new IsNullExpression(nonNullExpression));
                 }
             }
 
@@ -689,17 +684,16 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors
             TExpression sourceExpression,
             Func<TExpression, RelationalQueryModelVisitor, Func<IProperty, IQuerySource, SelectExpression, Expression>, Expression> binder)
         {
-            AliasExpression CreateAliasExpression(
+            Expression BindPropertyToSelectExpression(
                 IProperty property, IQuerySource querySource, SelectExpression selectExpression)
-                => new AliasExpression(
-                    new ColumnExpression(
+                => selectExpression.BindPropertyToSelectExpression(
                         _relationalAnnotationProvider.For(property).ColumnName,
                         property,
-                        selectExpression.GetTableForQuerySource(querySource)));
+                        querySource);
 
             var boundExpression = binder(sourceExpression, _queryModelVisitor, (property, querySource, selectExpression) =>
             {
-                var aliasExpression = CreateAliasExpression(property, querySource, selectExpression);
+                var aliasExpression = BindPropertyToSelectExpression(property, querySource, selectExpression);
 
                 if (_targetSelectExpression != null && selectExpression != _targetSelectExpression)
                 {
@@ -720,7 +714,7 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors
 
             while (outerQueryModelVisitor != null && canBindToOuterQueryModelVisitor)
             {
-                boundExpression = binder(sourceExpression, outerQueryModelVisitor, CreateAliasExpression);
+                boundExpression = binder(sourceExpression, outerQueryModelVisitor, BindPropertyToSelectExpression);
 
                 if (boundExpression != null)
                 {
@@ -1062,22 +1056,10 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors
                 {
                     var subquery = selectExpression.Tables.FirstOrDefault() as SelectExpression;
 
-                    var innerProjectionExpression = subquery?.Projection.FirstOrDefault() as AliasExpression;
+                    var innerProjectionExpression = subquery?.Projection.FirstOrDefault();
                     if (innerProjectionExpression != null)
                     {
-                        if (innerProjectionExpression.Alias != null)
-                        {
-                            return new ColumnExpression(
-                                innerProjectionExpression.Alias,
-                                innerProjectionExpression.Type,
-                                subquery);
-                        }
-
-                        var newExpression = selectExpression.UpdateColumnExpression(innerProjectionExpression.Expression, subquery);
-                        return new AliasExpression(newExpression)
-                        {
-                            SourceMember = innerProjectionExpression.SourceMember
-                        };
+                        return innerProjectionExpression.LiftExpressionFromSubquery(subquery);
                     }
                 }
             }

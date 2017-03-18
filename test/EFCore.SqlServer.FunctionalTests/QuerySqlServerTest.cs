@@ -5842,9 +5842,9 @@ ORDER BY COALESCE([c].[Region], N'ZZ')",
             base.Select_null_coalesce_operator();
 
             Assert.Equal(
-                @"SELECT [c].[CustomerID], [c].[CompanyName], COALESCE([c].[Region], N'ZZ')
+                @"SELECT [c].[CustomerID], [c].[CompanyName], COALESCE([c].[Region], N'ZZ') AS [c]
 FROM [Customers] AS [c]
-ORDER BY COALESCE([c].[Region], N'ZZ')",
+ORDER BY [c]",
                 Sql);
         }
 
@@ -6246,7 +6246,7 @@ FROM [Customers] AS [c]",
             Assert.Equal(
                 @"SELECT [c].[CustomerID], [c].[Address], [c].[City], [c].[CompanyName], [c].[ContactName], [c].[ContactTitle], [c].[Country], [c].[Fax], [c].[Phone], [c].[PostalCode], [c].[Region]
 FROM [Customers] AS [c]
-WHERE COALESCE([c].[CompanyName], [c].[ContactName]) = N'The Big Cheese'",
+WHERE (COALESCE([c].[CompanyName], [c].[ContactName])) = N'The Big Cheese'",
                 Sql);
         }
 
@@ -6262,11 +6262,11 @@ SELECT DISTINCT [t0].*
 FROM (
     SELECT [t].*
     FROM (
-        SELECT TOP(@__p_0) [c].[CustomerID], [c].[Address], [c].[City], [c].[CompanyName], [c].[ContactName], [c].[ContactTitle], [c].[Country], [c].[Fax], [c].[Phone], [c].[PostalCode], [c].[Region]
+        SELECT TOP(@__p_0) [c].[CustomerID], [c].[Address], [c].[City], [c].[CompanyName], [c].[ContactName], [c].[ContactTitle], [c].[Country], [c].[Fax], [c].[Phone], [c].[PostalCode], [c].[Region], COALESCE([c].[Region], N'ZZ') AS [c]
         FROM [Customers] AS [c]
-        ORDER BY COALESCE([c].[Region], N'ZZ')
+        ORDER BY [c]
     ) AS [t]
-    ORDER BY COALESCE([t].[Region], N'ZZ')
+    ORDER BY [t].[c]
     OFFSET @__p_1 ROWS
 ) AS [t0]",
                 Sql);
@@ -6278,13 +6278,12 @@ FROM (
 
             Assert.Equal(@"@__p_0: 5
 
-SELECT TOP(@__p_0) [c].[CustomerID], [c].[CompanyName], COALESCE([c].[Region], N'ZZ')
+SELECT TOP(@__p_0) [c].[CustomerID], [c].[CompanyName], COALESCE([c].[Region], N'ZZ') AS [c]
 FROM [Customers] AS [c]
-ORDER BY COALESCE([c].[Region], N'ZZ')",
+ORDER BY [c]",
                 Sql);
         }
 
-        // TODO: See issue#6703
         [SqlServerCondition(SqlServerCondition.SupportsOffset)]
         public override void Select_take_skip_null_coalesce_operator()
         {
@@ -6296,11 +6295,11 @@ ORDER BY COALESCE([c].[Region], N'ZZ')",
 
 SELECT [t].*
 FROM (
-    SELECT TOP(@__p_0) [c].[CustomerID], [c].[CompanyName], COALESCE([c].[Region], N'ZZ') AS [Coalesce]
+    SELECT TOP(@__p_0) [c].[CustomerID], [c].[CompanyName], COALESCE([c].[Region], N'ZZ') AS [c]
     FROM [Customers] AS [c]
-    ORDER BY [Coalesce]
+    ORDER BY [c]
 ) AS [t]
-ORDER BY [t].[Coalesce]
+ORDER BY [t].[c]
 OFFSET @__p_1 ROWS",
                 Sql);
         }
@@ -6316,11 +6315,11 @@ OFFSET @__p_1 ROWS",
 
 SELECT [t].*
 FROM (
-    SELECT TOP(@__p_0) [c].[CustomerID], [c].[CompanyName], [c].[Region]
+    SELECT TOP(@__p_0) [c].[CustomerID], [c].[CompanyName], [c].[Region], COALESCE([c].[Region], N'ZZ') AS [c]
     FROM [Customers] AS [c]
-    ORDER BY COALESCE([c].[Region], N'ZZ')
+    ORDER BY [c]
 ) AS [t]
-ORDER BY COALESCE([t].[Region], N'ZZ')
+ORDER BY [t].[c]
 OFFSET @__p_1 ROWS",
                 Sql);
         }
@@ -6336,11 +6335,11 @@ OFFSET @__p_1 ROWS",
 
 SELECT [t].*
 FROM (
-    SELECT TOP(@__p_0) [c].[CustomerID], [c].[Address], [c].[City], [c].[CompanyName], [c].[ContactName], [c].[ContactTitle], [c].[Country], [c].[Fax], [c].[Phone], [c].[PostalCode], [c].[Region]
+    SELECT TOP(@__p_0) [c].[CustomerID], [c].[Address], [c].[City], [c].[CompanyName], [c].[ContactName], [c].[ContactTitle], [c].[Country], [c].[Fax], [c].[Phone], [c].[PostalCode], [c].[Region], COALESCE([c].[Region], N'ZZ') AS [c]
     FROM [Customers] AS [c]
-    ORDER BY COALESCE([c].[Region], N'ZZ')
+    ORDER BY [c]
 ) AS [t]
-ORDER BY COALESCE([t].[Region], N'ZZ')
+ORDER BY [t].[c]
 OFFSET @__p_1 ROWS",
                 Sql);
         }
@@ -6860,13 +6859,13 @@ WHERE [o].[OrderDate] IS NOT NULL",
             Assert.Equal(
                 @"@__nextYear_0: 2017
 
-SELECT [t].[c0]
+SELECT [t].[c]
 FROM (
-    SELECT DISTINCT DATEPART(year, [o].[OrderDate]) AS [c0]
+    SELECT DISTINCT DATEPART(year, [o].[OrderDate]) AS [c]
     FROM [Orders] AS [o]
     WHERE [o].[OrderDate] IS NOT NULL
 ) AS [t]
-WHERE [t].[c0] < @__nextYear_0",
+WHERE [t].[c] < @__nextYear_0",
                 Sql);
         }
 

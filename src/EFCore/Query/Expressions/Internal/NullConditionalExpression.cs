@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Linq;
 using System.Linq.Expressions;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Utilities;
@@ -149,6 +150,27 @@ namespace Microsoft.EntityFrameworkCore.Query.Expressions.Internal
         ///     A textual representation of the <see cref="T:System.Linq.Expressions.Expression" />.
         /// </returns>
         public override string ToString()
-            => $"(?{AccessOperation}?)"; // TODO: Improve this
+        {
+            if (AccessOperation is MemberExpression memberExpression)
+            {
+                return Caller + "?." + memberExpression.Member.Name;
+            }
+
+            if (AccessOperation is MethodCallExpression methodCallExpression)
+            {
+                if (methodCallExpression.Object != null)
+                {
+                    return methodCallExpression.Object
+                        + "?." + methodCallExpression.Method.Name
+                        + "(" + string.Join(",", methodCallExpression.Arguments) + ")";
+                }
+                var method = methodCallExpression.Method;
+                return method.DeclaringType?.Name + "." + method.Name
+                    + "(?" + methodCallExpression.Arguments[0] + "?, "
+                    + string.Join(",", methodCallExpression.Arguments.Skip(1)) + ")";
+            }
+
+            return "?" + AccessOperation + "?";
+        }
     }
 }

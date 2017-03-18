@@ -70,5 +70,18 @@ namespace Microsoft.EntityFrameworkCore.Query.Expressions
         /// </summary>
         /// <returns>The reduced expression.</returns>
         public override Expression Reduce() => _operand;
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj))
+                return false;
+            if (ReferenceEquals(this, obj))
+                return true;
+            return obj.GetType() == GetType() && Equals((NullableExpression)obj);
+        }
+
+        protected bool Equals(NullableExpression other) => Equals(_operand, other._operand);
+
+        public override int GetHashCode() => _operand?.GetHashCode() ?? 0;
     }
 }

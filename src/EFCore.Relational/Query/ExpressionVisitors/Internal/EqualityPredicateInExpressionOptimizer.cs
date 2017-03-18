@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Query.Expressions;
 using Microsoft.EntityFrameworkCore.Utilities;
 using Remotion.Linq.Parsing;
@@ -50,7 +49,7 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors.Internal
         private Expression Optimize(
             BinaryExpression binaryExpression,
             ExpressionType equalityType,
-            Func<ColumnExpression, List<Expression>, Expression> inExpressionFactory)
+            Func<Expression, List<Expression>, Expression> inExpressionFactory)
         {
             var leftExpression = Visit(binaryExpression.Left);
             var rightExpression = Visit(binaryExpression.Right);
@@ -73,16 +72,16 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors.Internal
 
             if (leftColumnExpression == null)
             {
-                leftColumnExpression = ((equalityType == ExpressionType.Equal
+                leftColumnExpression = equalityType == ExpressionType.Equal
                     ? MatchInExpression(leftExpression, ref leftInValues)
-                    : MatchNotInExpression(leftExpression, ref leftInValues))).TryGetColumnExpression();
+                    : MatchNotInExpression(leftExpression, ref leftInValues);
             }
 
             if (rightColumnExpression == null)
             {
-                rightColumnExpression = ((equalityType == ExpressionType.Equal
+                rightColumnExpression = equalityType == ExpressionType.Equal
                     ? MatchInExpression(rightExpression, ref rightInValues)
-                    : MatchNotInExpression(rightExpression, ref rightInValues))).TryGetColumnExpression();
+                    : MatchNotInExpression(rightExpression, ref rightInValues);
             }
 
             if (leftColumnExpression != null
@@ -118,7 +117,7 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors.Internal
             return binaryExpression.Update(leftExpression, binaryExpression.Conversion, rightExpression);
         }
 
-        private static ColumnExpression MatchEqualityExpression(
+        private static Expression MatchEqualityExpression(
             Expression expression,
             ExpressionType equalityType,
             out Expression nonColumnExpression)
@@ -129,16 +128,15 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors.Internal
 
             if (binaryExpression?.NodeType == equalityType)
             {
-                nonColumnExpression
-                    = binaryExpression.Right as ConstantExpression
-                      ?? binaryExpression.Right as ParameterExpression
-                      ?? (Expression)(binaryExpression.Left as ConstantExpression)
-                      ?? binaryExpression.Left as ParameterExpression;
+                var left = binaryExpression.Left;
+                var right = binaryExpression.Right;
 
-                if (nonColumnExpression != null)
+                var isLeftConstantOrParameter = left is ConstantExpression || left is ParameterExpression;
+
+                if (isLeftConstantOrParameter || right is ConstantExpression || right is ParameterExpression)
                 {
-                    return binaryExpression.Right.TryGetColumnExpression()
-                           ?? binaryExpression.Left.TryGetColumnExpression();
+                    nonColumnExpression = isLeftConstantOrParameter ? left : right;
+                    return isLeftConstantOrParameter ? right : left;
                 }
             }
 
@@ -149,9 +147,7 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors.Internal
             Expression expression,
             ref IReadOnlyList<Expression> values)
         {
-            var inExpression = expression as InExpression;
-
-            if (inExpression != null)
+            if (expression is InExpression inExpression)
             {
                 values = inExpression.Values;
 

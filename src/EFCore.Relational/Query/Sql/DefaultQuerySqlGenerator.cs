@@ -29,6 +29,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Sql
         private IReadOnlyDictionary<string, object> _parametersValues;
         private ParameterNameGenerator _parameterNameGenerator;
         private RelationalTypeMapping _typeMapping;
+        private NullComparisonTransformingVisitor _nullComparisonTransformingVisitor;
         private RelationalNullsExpandingVisitor _relationalNullsExpandingVisitor;
         private PredicateReductionExpressionOptimizer _predicateReductionExpressionOptimizer;
         private PredicateNegationExpressionOptimizer _predicateNegationExpressionOptimizer;
@@ -123,6 +124,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Sql
             _parameterNameGenerator = Dependencies.ParameterNameGeneratorFactory.Create();
 
             _parametersValues = parameterValues;
+            _nullComparisonTransformingVisitor = new NullComparisonTransformingVisitor(parameterValues);
             IsCacheable = true;
 
             Visit(SelectExpression);
@@ -262,9 +264,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Sql
 
         private Expression ApplyOptimizations(Expression expression, bool searchCondition, bool joinCondition = false)
         {
-            var newExpression
-                = new NullComparisonTransformingVisitor(_parametersValues)
-                    .Visit(expression);
+            var newExpression = _nullComparisonTransformingVisitor.Visit(expression);
 
             if (_relationalNullsExpandingVisitor == null)
             {
@@ -1161,6 +1161,20 @@ namespace Microsoft.EntityFrameworkCore.Query.Sql
         /// <summary>
         ///     Visits a ColumnExpression.
         /// </summary>
+        /// <param name="projectStarExpression"> The column expression. </param>
+        /// <returns>
+        ///     An Expression.
+        /// </returns>
+        public virtual Expression VisitProjectStar(ProjectStarExpression projectStarExpression)
+        {
+            Check.NotNull(projectStarExpression, nameof(projectStarExpression));
+
+            return projectStarExpression;
+        }
+
+        /// <summary>
+        ///     Visits a ColumnExpression.
+        /// </summary>
         /// <param name="columnReferenceExpression"> The column expression. </param>
         /// <returns>
         ///     An Expression.
@@ -1187,14 +1201,11 @@ namespace Microsoft.EntityFrameworkCore.Query.Sql
         {
             Check.NotNull(aliasExpression, nameof(aliasExpression));
 
-            if (!aliasExpression.IsProjected)
-            {
-                Visit(aliasExpression.Expression);
+            Visit(aliasExpression.Expression);
 
-                if (aliasExpression.Alias != null)
-                {
-                    _relationalCommandBuilder.Append(" AS ");
-                }
+            if (aliasExpression.Alias != null)
+            {
+                _relationalCommandBuilder.Append(" AS ");
             }
 
             if (aliasExpression.Alias != null)
@@ -1204,6 +1215,11 @@ namespace Microsoft.EntityFrameworkCore.Query.Sql
 
             return aliasExpression;
         }
+
+        //public Expression VisitProjectStar(ProjectStarExpression projectStarExpression)
+        //{
+        //    throw new NotImplementedException();
+        //}
 
         /// <summary>
         ///     Visits an IsNullExpression.
@@ -1482,9 +1498,9 @@ namespace Microsoft.EntityFrameworkCore.Query.Sql
         /// </returns>
         protected virtual RelationalTypeMapping InferTypeMappingFromColumn([NotNull] Expression expression)
         {
-            var column = expression.TryGetColumnExpression();
-            return column?.Property != null
-                ? Dependencies.RelationalTypeMapper.FindMapping(column.Property)
+            var property = expression.TryGetProperty();
+            return property != null
+                ? Dependencies.RelationalTypeMapper.FindMapping(property)
                 : null;
         }
 

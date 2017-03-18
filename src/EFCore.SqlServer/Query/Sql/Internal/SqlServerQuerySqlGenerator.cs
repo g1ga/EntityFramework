@@ -98,9 +98,9 @@ namespace Microsoft.EntityFrameworkCore.Query.Sql.Internal
             return base.VisitSqlFunction(sqlFunctionExpression);
         }
 
-        protected override void GenerateProjection([NotNull] Expression projection)
+        protected override void GenerateProjection(Expression projection)
         {
-            var newProjection = (projection as AliasExpression)?.Expression?.NodeType == ExpressionType.Coalesce
+            var newProjection = (projection as BinaryExpression)?.NodeType == ExpressionType.Coalesce
                 && projection.Type.UnwrapNullableType() == typeof(bool)
                     ? new ExplicitCastExpression(projection, projection.Type)
                     : projection;

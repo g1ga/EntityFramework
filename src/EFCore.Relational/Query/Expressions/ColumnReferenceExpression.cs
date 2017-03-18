@@ -4,6 +4,7 @@
 using System;
 using System.Linq.Expressions;
 using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Query.Sql;
 using Microsoft.EntityFrameworkCore.Utilities;
 
@@ -18,6 +19,8 @@ namespace Microsoft.EntityFrameworkCore.Query.Expressions
         private readonly TableExpressionBase _tableExpression;
         private readonly Type _type;
 
+        //TODO:HACK for include
+
         /// <summary>
         ///     Creates a new instance of a ColumnExpression.
         /// </summary>
@@ -28,7 +31,6 @@ namespace Microsoft.EntityFrameworkCore.Query.Expressions
             [NotNull] TableExpressionBase tableExpression)
             : this(
                   Check.NotNull(aliasExpression, nameof(aliasExpression)).Alias,
-                  aliasExpression.Type,
                   aliasExpression,
                   Check.NotNull(tableExpression, nameof(tableExpression)))
         {
@@ -44,7 +46,6 @@ namespace Microsoft.EntityFrameworkCore.Query.Expressions
             [NotNull] TableExpressionBase tableExpression)
             : this(
                   Check.NotNull(columnExpression, nameof(columnExpression)).Name,
-                  columnExpression.Type,
                   columnExpression,
                   Check.NotNull(tableExpression, nameof(tableExpression)))
         {
@@ -60,37 +61,15 @@ namespace Microsoft.EntityFrameworkCore.Query.Expressions
             [NotNull] TableExpressionBase tableExpression)
             : this(
                   Check.NotNull(columnReferenceExpression, nameof(columnReferenceExpression)).Name,
-                  columnReferenceExpression.Type,
                   columnReferenceExpression,
                   Check.NotNull(tableExpression, nameof(tableExpression)))
         {
         }
 
-        ///// <summary>
-        /////     Creates a new instance of a ColumnExpression.
-        ///// </summary>
-        ///// <param name="columnName"></param>
-        ///// <param name="type"></param>
-        ///// <param name="projectStarExpression"> The corresponding property. </param>
-        ///// <param name="tableExpression"> The target table expression. </param>
-        //public ColumnReferenceExpression(
-        //    [NotNull] string columnName,
-        //    [NotNull] Type type,
-        //    [NotNull] ProjectStarExpression projectStarExpression,
-        //    [NotNull] TableExpressionBase tableExpression)
-        //    : this(
-        //          Check.NotEmpty(columnName, nameof(columnName)),
-        //          Check.NotNull(type, nameof(type)),
-        //          Check.NotNull(projectStarExpression, nameof(projectStarExpression)) as Expression, 
-        //          Check.NotNull(tableExpression, nameof(tableExpression)))
-        //{
-        //}
-
-
-        private ColumnReferenceExpression(string name, Type type, Expression expression, TableExpressionBase tableExpression)
+        private ColumnReferenceExpression(string name, Expression expression, TableExpressionBase tableExpression)
         {
             Name = name;
-            _type = type;
+            _type = expression.Type;
             _expression = expression;
             _tableExpression = tableExpression;
         }
@@ -161,9 +140,9 @@ namespace Microsoft.EntityFrameworkCore.Query.Expressions
 
         protected bool Equals(ColumnReferenceExpression other)
             => Equals(_expression, other._expression)
-                && Equals(_tableExpression, other._tableExpression)
-            && _type == other._type
-            && string.Equals(Name, other.Name);
+               && Equals(_tableExpression, other._tableExpression)
+               && _type == other._type
+               && string.Equals(Name, other.Name);
 
         public override bool Equals(object obj)
         {

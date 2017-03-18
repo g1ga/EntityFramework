@@ -3,7 +3,9 @@
 
 using System.Linq.Expressions;
 using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Query.Expressions;
+using Remotion.Linq.Clauses;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.EntityFrameworkCore.Internal
@@ -14,6 +16,16 @@ namespace Microsoft.EntityFrameworkCore.Internal
             => expression as ColumnExpression
                ?? (expression as AliasExpression)?.TryGetColumnExpression()
                ?? (expression as NullableExpression)?.Operand.TryGetColumnExpression();
+
+        public static IProperty TryGetProperty([NotNull] this Expression expression)
+            => (expression as ColumnExpression)?.Property
+               ?? (expression as AliasExpression)?.Expression.TryGetProperty()
+               ?? (expression as ColumnReferenceExpression)?.Expression.TryGetProperty();
+
+        public static IQuerySource TryGetQuerySource([NotNull] this Expression expression)
+            => (expression as ColumnExpression)?.Table.QuerySource
+               ?? (expression as AliasExpression)?.Expression.TryGetQuerySource()
+               ?? (expression as ColumnReferenceExpression)?.Table.QuerySource;
 
         public static bool IsAliasWithColumnExpression([NotNull] this Expression expression)
             => (expression as AliasExpression)?.Expression is ColumnExpression;
@@ -34,7 +46,28 @@ namespace Microsoft.EntityFrameworkCore.Internal
             return unwrappedExpression is ConstantExpression
                    || unwrappedExpression is ColumnExpression
                    || unwrappedExpression is ParameterExpression
-                   || unwrappedExpression.IsAliasWithColumnExpression();
+                   || unwrappedExpression is ColumnReferenceExpression
+                   || unwrappedExpression is AliasExpression;
+        }
+
+        public static ColumnReferenceExpression LiftExpressionFromSubquery(this Expression expression, TableExpressionBase table)
+        {
+            if (expression is ColumnExpression columnExpression)
+            {
+                return new ColumnReferenceExpression(columnExpression, table);
+            }
+
+            if (expression is AliasExpression aliasExpression)
+            {
+                return new ColumnReferenceExpression(aliasExpression, table);
+            }
+
+            if (expression is ColumnReferenceExpression columnReferenceExpression)
+            {
+                return new ColumnReferenceExpression(columnReferenceExpression, table);
+            }
+
+            return null;
         }
     }
 }

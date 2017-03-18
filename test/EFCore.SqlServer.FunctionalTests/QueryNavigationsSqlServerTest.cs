@@ -1111,26 +1111,17 @@ WHERE EXISTS (
 FROM [Customers] AS [c]
 ORDER BY [c].[CustomerID]
 
-SELECT [o4].[OrderID]
-FROM [Orders] AS [o4]
+SELECT [o2].[OrderID]
+FROM [Orders] AS [o2]
 
 @_outer_CustomerID: ALFKI (Size = 450)
 
-SELECT [o2].[OrderID]
-FROM [Orders] AS [o2]
-WHERE @_outer_CustomerID = [o2].[CustomerID]
-
-SELECT [o4].[OrderID]
-FROM [Orders] AS [o4]
-
-@_outer_CustomerID: ANATR (Size = 450)
+SELECT [o1].[OrderID]
+FROM [Orders] AS [o1]
+WHERE @_outer_CustomerID = [o1].[CustomerID]
 
 SELECT [o2].[OrderID]
-FROM [Orders] AS [o2]
-WHERE @_outer_CustomerID = [o2].[CustomerID]
-
-SELECT [o4].[OrderID]
-FROM [Orders] AS [o4]",
+FROM [Orders] AS [o2]",
                 Sql);
         }
 
